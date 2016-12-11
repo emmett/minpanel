@@ -15,11 +15,8 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
-from rest_framework import routers
-from minpanel.ingestion import views
-
 
 urlpatterns = [
-    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+    url(r'^reporting/', include('reporting.urls')),
     url(r'^admin/', admin.site.urls),
 ]
