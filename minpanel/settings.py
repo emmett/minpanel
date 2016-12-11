@@ -39,6 +39,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
+REST_FRAMEWORK = {
+        'DEFAULT_PERMISSION_CLASSES': [
+            'rest_framework.permissions.IsAdminUser',
+        ],
+        'PAGE_SIZE': 10
+}
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -76,11 +83,11 @@ WSGI_APPLICATION = 'minpanel.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME' : 'minpanel',
-        'USER' : 'minpaneladmin',
-        'PASSWORD' : 'gettoeng',
-        'HOST' : 'localhost',
-        'PORT' : '',
+        'NAME': 'minpanel',
+        'USER': 'minpaneladmin',
+        'PASSWORD': 'gettoeng',
+        'HOST': 'localhost',
+        'PORT': '',
     }
 }
 
