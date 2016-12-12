@@ -26,11 +26,16 @@ def user_login(request):
         print("Try Again, an error occurred")
 
 def track(request):
+    resp = {'status': 'pending', 'context': None}
+    if len(request.GET) == 0:
+        resp['status'] = 'Fail'
+        resp['context'] = 'No Event Data'
     token = request.GET.get("token")
     name = request.GET.get("name")
     ts = request.GET.get("ts", time.time())
     ts = int(ts)
     if token and name:
         event = Event.objects.create(token=token, name=name, ts=ts)
-        return HttpResponse(json.dumps({'status': 'success', 'context': 'Event written'}))
+        resp['status'] = 'Success'
+    return HttpResponse(json.dumps(resp))
 
