@@ -12,3 +12,4 @@ class Event(models.Model):
     ts = models.IntegerField()
     name = models.CharField(max_length=100)
     token = models.CharField(max_length=100)
+    date = models.CharField(max_length=100)

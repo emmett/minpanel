@@ -1,6 +1,6 @@
 var Minpanel = function(token, url) {
   this.token = token;
-  var url = url || 'http://127.0.0.1:8000/reporting/track'
+  var url = url || 'http://127.0.0.1:8000/reporting/track/'
   this.url = url
 }
 
