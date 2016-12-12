@@ -1,5 +1,4 @@
-from django.shortcuts import render
-from django.http import HttpResponse
+from django.shortcuts import render, HttpResponse, redirect
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from models import Project, Event
@@ -8,11 +7,12 @@ import time, datetime, json, uuid, base64
 def index(request):
     if request.user.is_authenticated():
         # Redirect to project page
-        return HttpResponse("Authenticated")
+        return redirect('/reporting/project/')
     if request.POST:
         loggedin = user_login(request)
         if loggedin:
-            return 
+            return redirect('/reporting/project/')
+
     # Redirect to login/create page
     return HttpResponse("HI")
 
@@ -45,16 +45,10 @@ def graph(request):
             genProject(request.user, name)
             return redirect('/')
         user = User.objects.get(username=request.user)
-        all_projects = getOrCreateProjects(user)
-
-def genProject(user, name):
-        token = str(uuid.uuid4()).replace('-','')
-        Project.objects.create(user=user, name=name, token=token)
-
-def getOrCreateProjects(user):
-    projects = user.project_set.all()
-    if len(projects) == 0:
-        genProject(user, 'First Project')
+        projects = getOrCreateProjects(user)
+        context = {"username": request.user, "projects":projects}
+        template = "project.html"
+        return render(request, template, context)
 
 def track(request):
     b64data = request.GET.get('data', None)
@@ -73,10 +67,10 @@ def track(request):
         resp['status'] = 'Success'
         resp['context'] = None
     response = HttpResponse(json.dumps(resp))
-    response["Access-Control-Allow-Origin"] = "*" 
+    response["Access-Control-Allow-Origin"] = "*"
     response["Access-Control-Allow-Headers"] = "content/type"
     response["Access-Control-Allow-Methods"] = "*"
-    return response 
+    return response
 
 def segment(request):
     token = request.GET.get('token')
@@ -94,9 +88,21 @@ def segment(request):
         result[date] = len(events)
     return HttpResponse(json.dumps(result))
 
+# Helper Functions
 def strpdate(date):
     return datetime.datetime.strptime(date, '%Y-%m-%d')
 
 def daterange(start_date, end_date):
     for n in range(int ((end_date - start_date).days) + 1):
         yield start_date + datetime.timedelta(n)
+
+def genProject(user, name):
+    token = str(uuid.uuid4()).replace('-','')
+    Project.objects.create(user=user, name=name, token=token)
+
+def getOrCreateProjects(user):
+    projects = user.project_set.all()
+    if len(projects) == 0:
+        genProject(user, 'First Project')
+        projects = user.project_set.all()
+    return projects
