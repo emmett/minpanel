@@ -1,4 +1,13 @@
 {% extends "base.html" %}
-
-{% block container %}
+{% block content %}
+  Welcome to your project
+  {{ username }}
+  <script>
+    var projects = {}
+  </script>
+  {% for project in projects %}
+    <script>
+      projects["{{ project }}"] = {token: "{{ project.token }}" }
+    </script>
+  {% endfor %}
 {% endblock %}

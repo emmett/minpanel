@@ -35,7 +35,7 @@ def user_login(request):
     except:
         print("Try Again, an error occurred")
 
-def graph(request):
+def project(request):
     # leverage render context to set project and user info
     if not request.user.is_authenticated():
         return redirect('/')
@@ -48,6 +48,7 @@ def graph(request):
         projects = getOrCreateProjects(user)
         context = {"username": request.user, "projects":projects}
         template = "project.html"
+        print context
         return render(request, template, context)
 
 def track(request):
@@ -81,6 +82,7 @@ def segment(request):
     except:
         return HttpResponse(json.dumps({'request':request.GET, 'error': 'no project found'}))
     result = {}
+    #segment by name
     for dateObj in daterange(from_date, to_date):
         date = dateObj.strftime('%Y-%m-%d')
         events = Event.objects.filter(token=token).filter(date=date)
@@ -88,6 +90,21 @@ def segment(request):
         result[date] = len(events)
     return HttpResponse(json.dumps(result))
 
+def tableSegment(request):
+    token = request.GET.get('token')
+    from_date = strpdate(request.GET.get('from_date'))
+    to_date = strpdate(request.GET.get('to_date'))
+    try:
+        project = Project.objects.get(token=token)
+    except:
+        return HttpResponse(json.dumps({'request':request.GET, 'error': 'no project found'}))
+    result = []
+    for dateObj in daterange(from_date, to_date):
+        date = dateObj.strftime('%Y-%m-%d')
+        events = Event.objects.filter(token=token).filter(date=date).order_by('ts')[:100]
+        result += events
+    return HttpResponse(json.dumps(result))
+    
 # Helper Functions
 def strpdate(date):
     return datetime.datetime.strptime(date, '%Y-%m-%d')
