@@ -6,6 +6,7 @@
     var projects = {}
   </script>
   {% for project in projects %}
+    {{ project }}
     <script>
       projects["{{ project }}"] = {token: "{{ project.token }}" }
     </script>
