@@ -14,13 +14,13 @@
     "babel-loader": "^6.2.0",
     "babel-preset-es2015": "^6.3.13",
     "html-webpack-plugin": "^2.8.1",
+    "jade": "^1.11.0",
+    "jquery": "^3.1.1",
     "js-beautify": "^1.5.10",
-    "virtual-jade": "^0.4.5",
+    "panel": "^0.9.1",
+    "virtual-jade": "^0.7.1",
     "virtual-jade-loader": "^0.4.0",
     "webpack": "^1.12.9",
-    "webpack-dev-server": "^1.14.1",
-    "jade": "^1.11.0",
-    "panel": "^0.9.1",
-    "virtual-jade": "^0.7.1"
+    "webpack-dev-server": "^1.14.1"
   }
 }

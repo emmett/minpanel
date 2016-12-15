@@ -3,12 +3,12 @@
   Welcome to your project
   {{ username }}
   <script>
-    var projects = {}
+    var projects = []
   </script>
   {% for project in projects %}
     {{ project }}
     <script>
-      projects["{{ project }}"] = {token: "{{ project.token }}" }
+      projects.push({token: "{{ project.token }}" })
     </script>
   {% endfor %}
 {% endblock %}

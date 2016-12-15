@@ -90,7 +90,7 @@ def segment(request):
         result[date] = len(events)
     return HttpResponse(json.dumps(result))
 
-def tableSegment(request):
+def table(request):
     token = request.GET.get('token')
     from_date = strpdate(request.GET.get('from_date'))
     to_date = strpdate(request.GET.get('to_date'))
@@ -101,10 +101,10 @@ def tableSegment(request):
     result = []
     for dateObj in daterange(from_date, to_date):
         date = dateObj.strftime('%Y-%m-%d')
-        events = Event.objects.filter(token=token).filter(date=date).order_by('ts')[:100]
+        events = [ obj.as_dict() for obj in Event.objects.filter(token=token).filter(date=date).order_by('ts')[:100]]
         result += events
     return HttpResponse(json.dumps(result))
-    
+
 # Helper Functions
 def strpdate(date):
     return datetime.datetime.strptime(date, '%Y-%m-%d')
