@@ -1,10 +1,18 @@
 import { Component } from 'panel';
+
 import template from './project.jade';
 import graphTemplate from './graph.jade';
 import tableTemplate from './table.jade';
 import dateTemplate from './date.jade';
 import toggleTemplate from './toggle.jade';
-import $ from 'jquery';
+import moment from 'moment';
+
+// Cant get these imports to work properly
+// import $ from 'jquery';
+// import highcharts from 'highcharts';
+// import _ from 'underscore';
+
+//import datepicker from 'datepicker-js';
 
 document.registerElement('project-app', class extends Component {
   get config() {
@@ -12,12 +20,85 @@ document.registerElement('project-app', class extends Component {
       defaultState: {
         url: 'http://localhost:8000/reporting',
         project: projects[0].token,
-        from: new Date().toISOString().split('T')[0],
-        to: new Date().toISOString().split('T')[0],
-        type: 'line'
+        from: moment().subtract(30, 'days').format('YYYY-MM-DD'),
+        to: moment().format('YYYY-MM-DD'),
+        type: 'line',
+        graphData: [],
+        tableData: [],
       },
       template
     }
+  }
+
+  attachedCallback() {
+    super.attachedCallback()
+    this.updateData()
+  }
+
+  updateData() {
+    this.segment().then(data =>{
+      data = JSON.parse(data)
+      var series = _.sortBy(_.map(data, (v,k) => ({x:new Date(k), y:v})), obj => obj.x)
+      new Highcharts.Chart('graphBody',{
+        chart: {
+            type: this.state.type
+        },
+
+        title: {
+            text: 'Events'
+        },
+        series: [{
+          data: series 
+        }]
+      })
+      const graphData = data
+      this.update({graphData})
+    })
+    this.table().done(data =>{
+      var table = $('.table').DataTable({
+        data: JSON.parse(data),
+        columns: [
+         {title: 'Name', data: 'Event'},
+         {title: 'Date', data: 'date'},
+        ]
+      });
+
+      const tableData = JSON.parse(data)
+      this.update({tableData})
+    })
+  }
+
+  segment(){
+    var args = [
+      '/segment/?token=',
+      this.state.project,
+      '&from_date=',
+      this.state.from,
+      '&to_date=',
+      this.state.to
+    ].join('')
+    return this.simpleAjax(this.state.url, args)
+  }
+
+  table(){
+    var args = [
+      '/table/?token=',
+      this.state.project,
+      '&from_date=',
+      this.state.from,
+      '&to_date=',
+      this.state.to
+    ].join('')
+    return this.simpleAjax(this.state.url, args)
+  }
+
+  simpleAjax(url, args){
+    return $.ajax({
+      url: url + args,
+      type: 'GET',
+      dateType: 'json',
+      contentType: 'application/json'
+    })
   }
 });
 
@@ -28,9 +109,13 @@ document.registerElement('table-view', class extends Component {
       template: tableTemplate,
     }
   }
+
+  get row() {
+    return this.state.tableData[0];
+  }
+
   attachedCallback() {
     super.attachedCallback()
-    updateData(this.state)
     this.update()
   }
 });
@@ -55,35 +140,27 @@ document.registerElement('toggle-view', class extends Component {
 document.registerElement('date-view', class extends Component {
   get config(){
     return {
+      helpers: {
+        toChange: () => this.changeToDate(),
+        fromChange: () => this.changeFromDate(),
+      },
       template: dateTemplate,
     }
   }
+
+  attachedCallback(){
+    super.attachedCallback()
+    $(".to").val(this.state.to);
+    $(".from").val(this.state.from);
+    this.update()
+  }
+
+  changeFromDate(){
+    this.update({from:  moment($('.from').val()).format('YYYY-MM-DD')})
+  }
+
+  changeToDate(){
+    this.update({to:  moment($('.to').val()).format('YYYY-MM-DD')})
+  }
 })
 
-
-function updateData(state) {
-  segment(state.url, state.project, state.from, state.to).done(data =>{
-    console.log(data)
-  })
-  table(state.url, state.project, state.from, state.to).done(data =>{
-    console.log(data)
-  })
-}
-function segment(url, token, from, to){
-  var args = ['/segment/?token=', token, '&from_date=', from, '&to_date=',to].join('')
-  return simpleAjax(url, args)
-}
-
-function table(url, token, from, to){
-  var args = ['/table/?token=', token, '&from_date=', from, '&to_date=',to].join('')
-  return simpleAjax(url, args)
-}
-
-function simpleAjax(url, args){
-  return $.ajax({
-    url: url + args,
-    type: 'GET',
-    dateType: 'json',
-    contentType: 'application/json'
-  })
-}
