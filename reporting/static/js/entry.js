@@ -47,24 +47,39 @@ document.registerElement('project-app', class extends Component {
         title: {
             text: 'Events'
         },
-        series: [{
-          data: series 
+        xAxis: {
+              type: 'datetime',
+              tickInterval: 36e5 * 24,
+              labels: {
+                formatter: function () {
+                    var dateObj = new Date(this.value)
+                    var [day, mon, date, year, hour] = dateObj.toString().split(' ')
+                    return [mon, date].join(' ')
+                }
+              }
+            },
+      series: [{
+          data: series
         }]
       })
       const graphData = data
       this.update({graphData})
     })
     this.table().done(data =>{
-      var table = $('.table').DataTable({
-        data: JSON.parse(data),
-        columns: [
-         {title: 'Name', data: 'Event'},
-         {title: 'Date', data: 'date'},
-        ]
-      });
-
+      if (!this.state.table){
+        table = $('.table').DataTable({
+          columns: [
+           {title: 'Name', data: 'Event'},
+           {title: 'Date', data: 'date'},
+          ]
+        })
+      } else {
+        var table = this.state.table
+      }
       const tableData = JSON.parse(data)
-      this.update({tableData})
+      table.clear().draw()
+      table.rows.add(tableData).draw()
+      this.update({tableData, table})
     })
   }
 
@@ -156,11 +171,14 @@ document.registerElement('date-view', class extends Component {
   }
 
   changeFromDate(){
+    debugger
     this.update({from:  moment($('.from').val()).format('YYYY-MM-DD')})
+    this.$panelRoot.updateData()
   }
 
   changeToDate(){
     this.update({to:  moment($('.to').val()).format('YYYY-MM-DD')})
+    this.$panelRoot.updateData()
   }
 })
 
