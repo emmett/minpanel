@@ -2,10 +2,7 @@
 {% block content %}
   <script>
     var projects = []
+    projects.push({token: "8dc3edd1637f48769fd1d3b26b124f0c"})
   </script>
-  {% for project in projects %}
-    <script>
-      projects.push({token: "{{ project.token }}" })
-    </script>
   {% endfor %}
 {% endblock %}

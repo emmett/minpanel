@@ -5,51 +5,12 @@ from models import Project, Event
 import time, datetime, json, uuid, base64
 
 def index(request):
-    if request.user.is_authenticated():
-        # Redirect to project page
-        return redirect('/reporting/project/')
-    if request.POST:
-        loggedin = user_login(request)
-        if loggedin:
-            return redirect('/reporting/project/')
-
-    # Redirect to login/create page
-    return HttpResponse("HI")
-
-def user_logout(request):
-    logout(request)
-    return redirect('/')
-
-def user_login(request):
-    try:
-        username = User.objects.get(email=request.POST['email']).username
-        user = authenticate(username=username, password=request.POST['password'])
-        if user is not None:
-            if user.is_active:
-                login(request, user)
-                return username
-            else:
-                return False
-        else:
-            return False
-    except:
-        print("Try Again, an error occurred")
+    return redirect('/reporting/project/')
 
 def project(request):
-    # leverage render context to set project and user info
-    if not request.user.is_authenticated():
-        return redirect('/')
-    else:
-        if request.POST.get('project'):
-            name = request.POST["project"]
-            genProject(request.user, name)
-            return redirect('/')
-        user = User.objects.get(username=request.user)
-        projects = getOrCreateProjects(user)
-        context = {"username": request.user, "projects":projects}
-        template = "project.html"
-        print context
-        return render(request, template, context)
+    context = {"username": request.user, "projects":projects}
+    template = "project.html"
+    return render(request, template, context)
 
 def track(request):
     b64data = request.GET.get('data', None)
