@@ -8,7 +8,7 @@ def index(request):
     return redirect('/reporting/project/')
 
 def project(request):
-    context = {"username": request.user, "projects":projects}
+    context = {}
     template = "project.html"
     return render(request, template, context)
 
