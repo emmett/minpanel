@@ -1,12 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-  Welcome to your project
-  {{ username }}
   <script>
     var projects = []
   </script>
   {% for project in projects %}
-    {{ project }}
     <script>
       projects.push({token: "{{ project.token }}" })
     </script>
