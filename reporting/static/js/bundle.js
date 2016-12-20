@@ -46,8 +46,6 @@
 
 	'use strict';
 
-	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
@@ -115,12 +113,10 @@
 
 	      this.segment().then(function (data) {
 	        data = JSON.parse(data);
-	        var series = _.sortBy(_.map(data, function (v, k) {
-	          return { x: new Date(k), y: v };
-	        }), function (obj) {
-	          return obj.x;
-	        });
-	        new Highcharts.Chart('graphBody', {
+	        // for each key in data, im a new series,
+	        // each data object should then be sorted as below
+	        //
+	        var highchartsOpts = {
 	          chart: {
 	            type: _this2.state.type
 	          },
@@ -133,24 +129,35 @@
 	            tickInterval: 36e5 * 24,
 	            labels: {
 	              formatter: function formatter() {
-	                var dateObj = new Date(this.value);
-
-	                var _dateObj$toString$spl = dateObj.toString().split(' '),
-	                    _dateObj$toString$spl2 = _slicedToArray(_dateObj$toString$spl, 5),
-	                    day = _dateObj$toString$spl2[0],
-	                    mon = _dateObj$toString$spl2[1],
-	                    date = _dateObj$toString$spl2[2],
-	                    year = _dateObj$toString$spl2[3],
-	                    hour = _dateObj$toString$spl2[4];
-
-	                return [mon, date].join(' ');
+	                var date = (0, _moment2.default)(this.value).format('YYYY-MM-DD');
+	                return date;
 	              }
 	            }
-	          },
-	          series: [{
-	            data: series
-	          }]
-	        });
+	          }
+	        };
+	        var series = [];
+	        if (_this2.state.type == 'line') {
+	          _.each(data, function (dataObj, ev) {
+	            series.push({ name: ev, data: _.sortBy(_.map(dataObj, function (v, k) {
+	                return { x: new Date(k), y: v };
+	              }), function (obj) {
+	                return obj.x;
+	              }) });
+	          });
+	        } else {
+	          _.each(data, function (dataObj, ev) {
+	            series.push({ data: [[ev, _.reduce(_.map(dataObj, function (v, k) {
+	                return v;
+	              }), function (s, n) {
+	                return s + n;
+	              }, 0)]] });
+	          });
+	          highchartsOpts.xAxis = {
+	            type: 'category'
+	          };
+	        }
+	        highchartsOpts.series = series;
+	        new Highcharts.Chart('graphBody', highchartsOpts);
 	        var graphData = data;
 	        _this2.update({ graphData: graphData });
 	      });
@@ -274,9 +281,23 @@
 	  }
 
 	  _createClass(_class4, [{
+	    key: 'changeToggle',
+	    value: function changeToggle() {
+	      var type = $('select').val();
+	      this.update({ type: type });
+	      this.$panelRoot.updateData();
+	    }
+	  }, {
 	    key: 'config',
 	    get: function get() {
+	      var _this6 = this;
+
 	      return {
+	        helpers: {
+	          changeToggle: function changeToggle() {
+	            return _this6.changeToggle();
+	          }
+	        },
 	        template: _toggle2.default
 	      };
 	    }
@@ -298,14 +319,16 @@
 	    key: 'attachedCallback',
 	    value: function attachedCallback() {
 	      _get(_class5.prototype.__proto__ || Object.getPrototypeOf(_class5.prototype), 'attachedCallback', this).call(this);
+
 	      $(".to").val(this.state.to);
+	      $(".to").datepicker();
 	      $(".from").val(this.state.from);
+	      $(".from").datepicker();
 	      this.update();
 	    }
 	  }, {
 	    key: 'changeFromDate',
 	    value: function changeFromDate() {
-	      debugger;
 	      this.update({ from: (0, _moment2.default)($('.from').val()).format('YYYY-MM-DD') });
 	      this.$panelRoot.updateData();
 	    }
@@ -318,15 +341,15 @@
 	  }, {
 	    key: 'config',
 	    get: function get() {
-	      var _this7 = this;
+	      var _this8 = this;
 
 	      return {
 	        helpers: {
 	          toChange: function toChange() {
-	            return _this7.changeToDate();
+	            return _this8.changeToDate();
 	          },
 	          fromChange: function fromChange() {
-	            return _this7.changeFromDate();
+	            return _this8.changeFromDate();
 	          }
 	        },
 	        template: _date2.default
@@ -3458,7 +3481,8 @@
 	        "className": [].concat('graph').filter(Boolean).join(' '),
 	      }, (function() {
 	        var __jade_nodes = [];
-	        __jade_nodes = __jade_nodes.concat($component.child('date-view')); /* = $component.child('toggle-view') */
+	        __jade_nodes = __jade_nodes.concat($component.child('date-view'));
+	        __jade_nodes = __jade_nodes.concat($component.child('toggle-view'));
 	        __jade_nodes = __jade_nodes.concat(h("div", {
 	          "id": 'graphBody',
 	        }));;
@@ -3519,32 +3543,38 @@
 /***/ function(module, exports, __webpack_require__) {
 
 	function _jade_template_fn(locals) {
-	  locals = locals || {};
-	  var h = __webpack_require__(47);
-	  return h("div", {
-	    "className": [].concat('toggle').filter(Boolean).join(' '),
-	  }, (function() {
-	    var __jade_nodes = [];
-	    __jade_nodes = __jade_nodes.concat("this is my toggle");
-	    __jade_nodes = __jade_nodes.concat(h("select", (function() {
-	      var __jade_nodes = [];
-	      __jade_nodes = __jade_nodes.concat((['line', 'bar']).reduce(function(__each_nodes, opt, $index) {
-	        return __each_nodes.concat((function() {
+	  locals = locals || {};;;
+	  var result_of_with = (function($helpers) {
+	    var h = __webpack_require__(47);
+	    return {
+	      value: (h("div", {
+	        "className": [].concat('toggle').filter(Boolean).join(' '),
+	      }, (function() {
+	        var __jade_nodes = [];
+	        __jade_nodes = __jade_nodes.concat(h("select", {
+	          "onchange": $helpers.changeToggle,
+	        }, (function() {
 	          var __jade_nodes = [];
-	          __jade_nodes = __jade_nodes.concat(h("option", {
-	            "value": opt,
-	          }, (function() {
-	            var __jade_nodes = [];
-	            __jade_nodes = __jade_nodes.concat("" + (opt) + "");;
-	            return __jade_nodes
-	          }).call(this).filter(Boolean)));;
+	          __jade_nodes = __jade_nodes.concat((['line', 'bar']).reduce(function(__each_nodes, opt, $index) {
+	            return __each_nodes.concat((function() {
+	              var __jade_nodes = [];
+	              __jade_nodes = __jade_nodes.concat(h("option", {
+	                "value": opt,
+	              }, (function() {
+	                var __jade_nodes = [];
+	                __jade_nodes = __jade_nodes.concat("" + (opt) + "");;
+	                return __jade_nodes
+	              }).call(this).filter(Boolean)));;
+	              return __jade_nodes
+	            }).call(this));
+	          }, []));;
 	          return __jade_nodes
-	        }).call(this));
-	      }, []));;
-	      return __jade_nodes
-	    }).call(this).filter(Boolean)));;
-	    return __jade_nodes
-	  }).call(this).filter(Boolean))
+	        }).call(this).filter(Boolean)));;
+	        return __jade_nodes
+	      }).call(this).filter(Boolean)))
+	    };
+	  }.call(this, "$helpers" in locals ? locals.$helpers : typeof $helpers !== "undefined" ? $helpers : undefined));
+	  if (result_of_with) return result_of_with.value;
 	}
 	module.exports = _jade_template_fn;
 

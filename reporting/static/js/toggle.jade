@@ -1,4 +1,4 @@
-.toggle this is my toggle
-  select
+.toggle
+  select(onchange=$helpers.changeToggle)
     each opt in ['line','bar']
       option(value=opt) #{opt}

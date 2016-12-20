@@ -1,7 +1,9 @@
 from django.shortcuts import render, HttpResponse, redirect
 from django.contrib.auth.models import User
+from django.db.models import Count
 from django.contrib.auth import authenticate, login, logout
 from models import Project, Event
+from collections import defaultdict
 import time, datetime, json, uuid, base64
 
 def index(request):
@@ -38,17 +40,19 @@ def segment(request):
     token = request.GET.get('token')
     from_date = strpdate(request.GET.get('from_date'))
     to_date = strpdate(request.GET.get('to_date'))
+    name = request.GET.get('name', None)
     try:
         project = Project.objects.get(token=token)
     except:
         return HttpResponse(json.dumps({'request':request.GET, 'error': 'no project found'}))
     result = {}
-    #segment by name
-    for dateObj in daterange(from_date, to_date):
-        date = dateObj.strftime('%Y-%m-%d')
-        events = Event.objects.filter(token=token).filter(date=date)
-        result[date] = {}
-        result[date] = len(events)
+    eventCount = []
+    if name:
+        #aggregate for name filter
+            eventCount = Event.objects.filter(token=token).filter(date__range=[from_date, to_date]).filter(name=name).values('name', 'date').annotate(event=Count('name'), count=Count('date'))
+    else:
+            eventCount = Event.objects.filter(token=token).filter(date__range=[from_date, to_date]).values('name', 'date').annotate(event=Count('name'), count=Count('date'))
+    result = resultDict(eventCount, from_date, to_date)
     return HttpResponse(json.dumps(result))
 
 def table(request):
@@ -60,6 +64,7 @@ def table(request):
     except:
         return HttpResponse(json.dumps({'request':request.GET, 'error': 'no project found'}))
     result = []
+
     for dateObj in daterange(from_date, to_date):
         date = dateObj.strftime('%Y-%m-%d')
         events = [ obj.as_dict() for obj in Event.objects.filter(token=token).filter(date=date).order_by('ts')[:100]]
@@ -67,6 +72,13 @@ def table(request):
     return HttpResponse(json.dumps(result))
 
 # Helper Functions
+def resultDict(queryset, from_date, to_date):
+    # for each day in my range set to 0 unless my queryset has the day
+    result = defaultdict(lambda:{key.strftime('%Y-%m-%d'): 0 for key in daterange(from_date, to_date)})
+    for item in queryset:
+        result[item['name']][item['date']]= item['count']
+    return result
+
 def strpdate(date):
     return datetime.datetime.strptime(date, '%Y-%m-%d')
 

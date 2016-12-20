@@ -38,8 +38,10 @@ document.registerElement('project-app', class extends Component {
   updateData() {
     this.segment().then(data =>{
       data = JSON.parse(data)
-      var series = _.sortBy(_.map(data, (v,k) => ({x:new Date(k), y:v})), obj => obj.x)
-      new Highcharts.Chart('graphBody',{
+      // for each key in data, im a new series,
+      // each data object should then be sorted as below
+      //
+      var highchartsOpts = {
         chart: {
             type: this.state.type
         },
@@ -52,16 +54,27 @@ document.registerElement('project-app', class extends Component {
               tickInterval: 36e5 * 24,
               labels: {
                 formatter: function () {
-                    var dateObj = new Date(this.value)
-                    var [day, mon, date, year, hour] = dateObj.toString().split(' ')
-                    return [mon, date].join(' ')
+                    var date = moment(this.value).format('YYYY-MM-DD')
+                    return date
                 }
               }
             },
-      series: [{
-          data: series
-        }]
-      })
+      }
+      var series = []
+      if (this.state.type == 'line'){
+        _.each(data, (dataObj, ev) => {
+          series.push({name:ev, data:_.sortBy(_.map(dataObj, (v,k) => ({x:new Date(k), y:v})), obj => obj.x)})
+        })
+      } else {
+        _.each(data, (dataObj, ev) => {
+          series.push({data: [ [ev, _.reduce(_.map(dataObj, (v,k) => v), (s, n) => {return s+n}, 0)] ] })
+        })
+        highchartsOpts.xAxis = {
+          type: 'category',
+        }
+      }
+      highchartsOpts.series = series
+      new Highcharts.Chart('graphBody',highchartsOpts)
       const graphData = data
       this.update({graphData})
     })
@@ -147,8 +160,16 @@ document.registerElement('graph-view', class extends Component {
 document.registerElement('toggle-view', class extends Component {
   get config(){
     return {
+      helpers: {
+        changeToggle: () => this.changeToggle(),
+      },
       template: toggleTemplate,
     }
+  }
+  changeToggle(){
+    let type = $('select').val()
+    this.update({type : type})
+    this.$panelRoot.updateData()
   }
 })
 
@@ -165,13 +186,15 @@ document.registerElement('date-view', class extends Component {
 
   attachedCallback(){
     super.attachedCallback()
+
     $(".to").val(this.state.to);
+    $(".to").datepicker()
     $(".from").val(this.state.from);
+    $(".from").datepicker()
     this.update()
   }
 
   changeFromDate(){
-    debugger
     this.update({from:  moment($('.from').val()).format('YYYY-MM-DD')})
     this.$panelRoot.updateData()
   }
